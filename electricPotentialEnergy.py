@@ -34,8 +34,6 @@ class Coulomb:
                 energySum += 2 * E_ij
         return energySum
 
-    
-
 def plotState(system: Coulomb) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plots the state of `system`.
@@ -49,9 +47,21 @@ def plotState(system: Coulomb) -> Tuple[plt.Figure, plt.Axes]:
 
     return fig, ax
 
+def moveParticle(system: Coulomb, index: int, max_step: float) -> Coulomb:
+    """
+    Moves a single particle randomly and ensures it stays within the circle.
+    """
+    angle = 2 * np.pi * system.generator.random()
+    step = max_step * (2 * system.generator.random() - 1)
+    new_position = system.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
+
+    if np.linalg.norm(new_position) <= RADIUS:
+        system.state[index] = new_position
+
+    return system
+
 if __name__ == "__main__":
     system = Coulomb(10)
     fig, ax = plotState(system)
     print(system.stateEnergy())
     plt.show()
-
