@@ -65,6 +65,40 @@ def moveParticle(system: Coulomb, index: int, max_step: float) -> Coulomb:
 
     return system
 
+def simulatedAnnealing(system: Coulomb, max_steps: int, initial_temp: float, cooling_rate: float, max_step: float) -> Coulomb:
+    """
+    Simulated Annealing to find the minimal energy configuration.
+    """
+    temp = initial_temp
+    best_state = system.state.copy()
+    best_energy = system.stateEnergy()
+    
+    for step in range(max_steps):
+
+        index = system.generator.integers(system.state.shape[0])
+        
+        old_state = system.state[index].copy()
+        old_energy = system.stateEnergy()
+        
+        system = moveParticle(system, index, max_step)
+        new_energy = system.stateEnergy()
+        
+        # Metropolis acceptance criterion
+        if new_energy > old_energy:
+            acceptance_prob = np.exp(-(new_energy - old_energy) / temp)
+            if system.generator.random() > acceptance_prob:
+                system.state[index] = old_state
+        
+        if new_energy < best_energy:
+            best_energy = new_energy
+            best_state = system.state.copy()
+        
+        temp *= cooling_rate
+        
+    system.state = best_state
+
+    return system
+
 if __name__ == "__main__":
     system = Coulomb(10)
     fig, ax = plotState(system)
