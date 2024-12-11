@@ -33,6 +33,52 @@ class Coulomb:
 
                 energySum += 2 * E_ij
         return energySum
+    
+    def moveParticle(self, index: int, max_step: float) -> None:
+        """
+        Moves a single particle randomly and ensures it stays within the circle.
+        """
+        angle = 2 * np.pi * self.generator.random()
+        step = max_step * (2 * self.generator.random() - 1)
+
+        while True:
+            new_position = self.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
+            if np.linalg.norm(new_position) <= RADIUS:
+                self.state[index] = new_position
+                break
+            angle = 2 * np.pi * self.generator.random()
+
+def simulatedAnnealing(system: Coulomb, max_steps: int, initial_temp: float, cooling_rate: float, max_step: float) -> Coulomb:
+    """
+    Simulated Annealing to find the minimal energy configuration.
+    """
+    temp = initial_temp
+    best_state = system.state.copy()
+    best_energy = system.stateEnergy()
+
+    for step in range(max_steps):
+        index = system.generator.integers(system.state.shape[0])
+
+        old_state = system.state[index].copy()
+        old_energy = system.stateEnergy()
+
+        system.moveParticle(index, max_step)
+        new_energy = system.stateEnergy()
+
+        if new_energy > old_energy:
+            acceptance_prob = np.exp(-(new_energy - old_energy) / temp)
+            if system.generator.random() > acceptance_prob:
+                system.state[index] = old_state
+
+        if new_energy < best_energy:
+            best_energy = new_energy
+            best_state = system.state.copy()
+
+        temp *= cooling_rate
+
+    system.state = best_state
+
+    return system
 
 def plotState(system: Coulomb) -> Tuple[plt.Figure, plt.Axes]:
     """
@@ -46,58 +92,6 @@ def plotState(system: Coulomb) -> Tuple[plt.Figure, plt.Axes]:
     ax.scatter(system.state[:,0], system.state[:,1])
 
     return fig, ax
-
-def moveParticle(system: Coulomb, index: int, max_step: float) -> Coulomb:
-    """
-    Moves a single particle randomly and ensures it stays within the circle.
-    """
-    angle = 2 * np.pi * system.generator.random()
-    step = max_step * (2 * system.generator.random() - 1)
-
-    while True:
-        new_position = system.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
-
-        if np.linalg.norm(new_position) <= RADIUS:
-            system.state[index] = new_position
-            break
-        
-        angle = 2 * np.pi * system.generator.random()
-
-    return system
-
-def simulatedAnnealing(system: Coulomb, max_steps: int, initial_temp: float, cooling_rate: float, max_step: float) -> Coulomb:
-    """
-    Simulated Annealing to find the minimal energy configuration.
-    """
-    temp = initial_temp
-    best_state = system.state.copy()
-    best_energy = system.stateEnergy()
-    
-    for step in range(max_steps):
-
-        index = system.generator.integers(system.state.shape[0])
-        
-        old_state = system.state[index].copy()
-        old_energy = system.stateEnergy()
-        
-        system = moveParticle(system, index, max_step)
-        new_energy = system.stateEnergy()
-        
-        # Metropolis acceptance criterion
-        if new_energy > old_energy:
-            acceptance_prob = np.exp(-(new_energy - old_energy) / temp)
-            if system.generator.random() > acceptance_prob:
-                system.state[index] = old_state
-        
-        if new_energy < best_energy:
-            best_energy = new_energy
-            best_state = system.state.copy()
-        
-        temp *= cooling_rate
-        
-    system.state = best_state
-
-    return system
 
 if __name__ == "__main__":
     system = Coulomb(10)
