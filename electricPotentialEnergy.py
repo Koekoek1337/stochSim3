@@ -53,10 +53,15 @@ def moveParticle(system: Coulomb, index: int, max_step: float) -> Coulomb:
     """
     angle = 2 * np.pi * system.generator.random()
     step = max_step * (2 * system.generator.random() - 1)
-    new_position = system.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
 
-    if np.linalg.norm(new_position) <= RADIUS:
-        system.state[index] = new_position
+    while True:
+        new_position = system.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
+
+        if np.linalg.norm(new_position) <= RADIUS:
+            system.state[index] = new_position
+            break
+        
+        angle = 2 * np.pi * system.generator.random()
 
     return system
 
