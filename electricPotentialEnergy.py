@@ -39,8 +39,8 @@ def plotState(system: Coulomb) -> Tuple[plt.Figure, plt.Axes]:
     Plots the state of `system`.
     """
     fig, ax = plt.subplots()
-    fig.set_figheight(8)
-    fig.set_figwidth(8)
+    fig.set_figheight(4)
+    fig.set_figwidth(4)
     circle = plt.Circle((0,0), 1, color="black", fill=False)
     ax.add_patch(circle)
     ax.scatter(system.state[:,0], system.state[:,1])
