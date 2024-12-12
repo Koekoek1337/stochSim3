@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from typing import List, Tuple
+from typing import List, Tuple, Generator
 
 RADIUS = 1
 
@@ -103,6 +103,69 @@ def plotState(system: Coulomb) -> Tuple[plt.Figure, plt.Axes]:
     ax.scatter(system.state[:,0], system.state[:,1])
 
     return fig, ax
+
+
+def linearCooling(T_Init, dT) -> Generator[float]:
+    """ 
+    Yields a linearily cooled themperature over iteratiosn with temperature steps dT. 
+    such that T = T_0 - i*dT. Yields 0 if T <= 0.
+
+    Args:
+        T_Init: Initial temperature
+        dT:     some linear coefficient 0 < dT < T_Init
+    """
+    yield T_Init
+
+    T = T_Init - dT
+    while T_Init > 0:
+        yield T
+        T -= dT
+    
+    yield 0
+
+
+def geometricCooling(T_Init, alpha) -> Generator[float]:
+    """
+    Yields a geometrically cooled temperature over iterations such that T = T_0 * a^i
+
+    Args:
+        T_Init: Initial temperature
+        alpha:  Some value 0 < alpha < 1.
+    """
+    yield T_Init
+
+    nIter = 1
+
+    while True:
+        yield T_Init * np.power(alpha, nIter)
+        nIter += 1
+
+
+def logarithmicCooling(T_Init):
+    """ 
+
+    """
+    nIter = 1
+    c = T_Init * np.log10(1 + nIter)
+    yield T_Init
+
+    while True:
+        nIter += 1
+        yield c / np.log10(1 + nIter)
+
+
+def arithmeticGeometric(T_init, a, b):
+    """
+    TODO: Elaborate 
+    
+    https://doi.org/10.13053/cys-21-3-2553
+    """
+
+    yield T_init
+    T = T_init
+    while True:
+        T = a * T + b
+        yield T
 
 if __name__ == "__main__":
     system = Coulomb(10)
