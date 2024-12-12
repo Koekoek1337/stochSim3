@@ -41,34 +41,45 @@ class Coulomb:
         angle = 2 * np.pi * self.generator.random()
         step = max_step * (2 * self.generator.random() - 1)
 
-        while True:
-            new_position = self.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
-            if np.linalg.norm(new_position) <= RADIUS:
-                self.state[index] = new_position
-                break
-            angle = 2 * np.pi * self.generator.random()
+        new_position = self.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
+        if np.linalg.norm(new_position) >= RADIUS:
+            self.state[index] = new_position/np.linalg.norm(new_position)
+        else:
+            self.state[index] = new_position
 
-def simulatedAnnealing(system: Coulomb, max_steps: int, initial_temp: float, cooling_rate: float, max_step: float) -> Coulomb:
+        # while True:
+        #     new_position = self.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
+        #     if np.linalg.norm(new_position) <= RADIUS:
+        #         self.state[index] = new_position
+        #         break
+        #     angle = 2 * np.pi * self.generator.random()
+
+def simulatedAnnealing(system: Coulomb, max_iters: int, initial_temp: float, cooling_rate: float, max_step: float) -> Coulomb:
     """
     Simulated Annealing to find the minimal energy configuration.
     """
     temp = initial_temp
     best_state = system.state.copy()
     best_energy = system.stateEnergy()
+    energy = np.array(np.zeros(max_iters))
+    new_energy = best_energy
 
-    for step in range(max_steps):
+    for step in range(max_iters):
         index = system.generator.integers(system.state.shape[0])
 
         old_state = system.state[index].copy()
-        old_energy = system.stateEnergy()
-
+        old_energy = new_energy
         system.moveParticle(index, max_step)
         new_energy = system.stateEnergy()
 
+        energy[step] = old_energy
         if new_energy > old_energy:
             acceptance_prob = np.exp(-(new_energy - old_energy) / temp)
             if system.generator.random() > acceptance_prob:
                 system.state[index] = old_state
+            else:
+                new_energy = old_energy
+
 
         if new_energy < best_energy:
             best_energy = new_energy
@@ -78,7 +89,7 @@ def simulatedAnnealing(system: Coulomb, max_steps: int, initial_temp: float, coo
 
     system.state = best_state
 
-    return system
+    return system, energy
 
 def plotState(system: Coulomb) -> Tuple[plt.Figure, plt.Axes]:
     """
