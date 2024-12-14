@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from typing import List, Tuple, Generator
+from typing import List, Tuple, Generator, Union
 
 RADIUS = 1
 
@@ -51,15 +51,18 @@ class Coulomb:
         else:
             self.state[index] = new_position
 
-def simulatedAnnealing(system: Coulomb, max_iters: int, initial_temp: float, cooling_rate: float, max_step: float) -> Coulomb:
+def simulatedAnnealing(system: Coulomb, max_iters: int, initial_temp: float, cooling_rate: float, max_step: float, save_path: str = None) -> Coulomb:
     """
     Simulated Annealing to find the minimal energy configuration.
+    Optionally logs system states to a NumPy .npy file.
     """
     temp = initial_temp
     best_state = system.state.copy()
     best_energy = system.stateEnergy()
     energy = np.array(np.zeros(max_iters))
     system.newEnergy = best_energy
+
+    states_log = []
 
     for step in range(max_iters):
         index = system.generator.integers(system.state.shape[0])
@@ -77,32 +80,45 @@ def simulatedAnnealing(system: Coulomb, max_iters: int, initial_temp: float, coo
             else:
                 system.newEnergy = system.currentEnergy
 
-
         if system.newEnergy < system.bestEnergy:
             system.bestEnergy = system.newEnergy
             best_state = system.state.copy()
+        
+        if save_path is not None:
+            states_log.append(system.state.copy())
 
         temp *= cooling_rate
+    
+    if save_path is not None:
+        np.save(save_path, states_log)
 
     system.state = best_state
 
     return system, energy
 
-def plotState(system: Coulomb) -> Tuple[plt.Figure, plt.Axes]:
+def plotState(state: np.ndarray, animation: bool = False, ax: plt.Axes = None) -> Union[plt.Axes, Tuple[plt.Figure, plt.Axes]]:
     """
     Plots the state of `system`.
     """
-    fig, ax = plt.subplots()
-    fig.set_figheight(4)
-    fig.set_figwidth(4)
-    circle = plt.Circle((0,0), 1, color="black", fill=False)
+    if animation is False:
+        fig, ax = plt.subplots(figsize=(6, 6))
+    
+    ax.clear()
+    circle = plt.Circle((0,0), RADIUS, color="black", fill=False)
     ax.add_patch(circle)
-    ax.scatter(system.state[:,0], system.state[:,1])
+    ax.scatter(state[:,0], state[:,1])
+    # ax.set_xlim([-RADIUS, RADIUS])
+    # ax.set_ylim([-RADIUS, RADIUS])
+    # ax.set_aspect("equal")
+    # ax.axis("off")
 
-    return fig, ax
+    if animation is False:
+        return fig, ax
+    else:
+        return ax
 
 
-def linearCooling(T_Init, dT) -> Generator[float]:
+def linearCooling(T_Init, dT) -> Generator[float, None, None]:
     """ 
     Yields a linearily cooled themperature over iteratiosn with temperature steps dT. 
     such that T = T_0 - i*dT. Yields 0 if T <= 0.
@@ -121,7 +137,7 @@ def linearCooling(T_Init, dT) -> Generator[float]:
     yield 0
 
 
-def geometricCooling(T_Init, alpha) -> Generator[float]:
+def geometricCooling(T_Init, alpha) -> Generator[float, None, None]:
     """
     Yields a geometrically cooled temperature over iterations such that T = T_0 * a^i
 
