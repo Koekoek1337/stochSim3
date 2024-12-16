@@ -1,4 +1,6 @@
 import numpy as np
+import scipy as sp
+import scipy.spatial as spatial
 import matplotlib.pyplot as plt
 
 from typing import List, Tuple, Generator
@@ -21,10 +23,11 @@ class Coulomb:
 
             self.state[i, :] = dist * np.cos(angle), dist * np.sin(angle)
     
+    """
     def stateEnergy(self):
-        """
+        \"""
         Calculates the energy of the current system state.
-        """
+        \"""
         energySum = 0.0
         for i in range(self.state.shape[0]):
             for j in range(i + 1, self.state.shape[0]):
@@ -33,7 +36,17 @@ class Coulomb:
 
                 energySum += 2 * E_ij
         return energySum
-    
+    """
+
+    def stateEnergy(self):
+        """
+        Calculates the energy of the current system state.
+        """
+        distance = spatial.distance_matrix(self.state, self.state)
+        np.fill_diagonal(distance, 1) # The diagonals are all 0, which would result in inf when divided
+        energy = np.sum(np.divide(1, distance)) - self.state.shape[0] # Correct for the modified diagonal
+        return energy
+
     def moveParticle(self, index: int, max_step: float) -> None:
         """
         Moves a single particle randomly and ensures it stays within the circle.
@@ -157,7 +170,7 @@ def logarithmicCooling(T_Init):
 def arithmeticGeometric(T_init, a, b):
     """
     TODO: Elaborate 
-    
+
     https://doi.org/10.13053/cys-21-3-2553
     """
 
