@@ -27,39 +27,6 @@ class Coulomb:
             angle = self.generator.random() * 2 * np.pi
 
             self.state[i, :] = dist * np.cos(angle), dist * np.sin(angle)
-    
-    
-    """
-    def stateEnergy(self):
-        \"""
-        Calculates the energy of the current system state.
-        \"""
-        energySum = 0.0
-        for i in range(self.state.shape[0]):
-            for j in range(i + 1, self.state.shape[0]):
-                pyt  = np.square(self.state[i,:] - self.state[j,:])
-                E_ij = np.divide(1, np.sqrt(np.sum(pyt)))
-
-                energySum += 2 * E_ij
-        self.totalEnergy = energySum
-        return energySum
-    """
-        
-    """
-    def stateEnergy(self):
-        \"""
-        Calculates the energy of the current system state.
-        \"""
-        energySum = 0.0
-        for i in range(self.state.shape[0]):
-            for j in range(i + 1, self.state.shape[0]):
-                pyt  = np.square(self.state[i,:] - self.state[j,:])
-                E_ij = np.divide(1, np.sqrt(np.sum(pyt)))
-
-                energySum += 2 * E_ij
-        self.totalEnergy = energySum
-        return energySum
-    """
 
     def stateEnergy(self):
         """
@@ -77,7 +44,7 @@ class Coulomb:
         Moves a single particle randomly and ensures it stays within the circle.
         """
         angle = 2 * np.pi * self.generator.random()
-        step = max_step * (2 * self.generator.random() - 1) #* self.bestEnergy/(self.currentEnergy+self.bestEnergy)
+        step = max_step * self.generator.random()
 
         new_position = self.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
         if np.linalg.norm(new_position) >= RADIUS:
@@ -97,7 +64,7 @@ class Coulomb:
         forceAngle = np.arctan(fy/fx)
 
         angle = self.generator.normal(forceAngle, np.pi / 4)
-        step = max_step * (2 * self.generator.random() - 1) #* self.bestEnergy/(self.currentEnergy+self.bestEnergy)
+        step = max_step * self.generator.random()
 
         new_position = self.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
         if np.linalg.norm(new_position) >= RADIUS:
@@ -171,6 +138,10 @@ def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int,
 
     return system, energy
 
+def optimize(x):
+    system = Coulomb(11, seed=42)
+    return min(simulatedAnnealing(system, 10, 10000, geometricCooling(10000, x[0]), x[1])[1])
+
 def plotState(state: np.ndarray, animation: bool = False, ax: plt.Axes = None) -> Union[plt.Axes, Tuple[plt.Figure, plt.Axes]]:
     """
     Plots the state of `system`.
@@ -195,7 +166,7 @@ def plotState(state: np.ndarray, animation: bool = False, ax: plt.Axes = None) -
 
 def linearCooling(T_Init, dT) -> Generator[float, None, None]:
     """ 
-    Yields a linearily cooled themperature over iteratiosn with temperature steps dT. 
+    Yields a linearily cooled themperature over iterations with temperature steps dT. 
     such that T = T_0 - i*dT. Yields 0 if T <= 0.
 
     Args:
