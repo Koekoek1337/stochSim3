@@ -85,6 +85,27 @@ class Coulomb:
         else:
             self.state[index] = new_position
 
+    def forceMoveParticle(self, index, max_step):
+        forceComp = self.state[:,:] - self.state[index, :]
+        dists = spatial.distance_matrix(self.state[index:index+1, :], self.state)
+        dists = dists[0,:]
+        dists[index] = 1
+        forces = np.divide(1, dists)
+        forceComp = forceComp * np.asarray([forces, forces]).transpose()
+        fx, fy = np.sum(forceComp[:,0]), np.sum(forceComp[:,1])
+
+        forceAngle = np.arctan(fy/fx)
+
+        angle = self.generator.normal(forceAngle, np.pi / 4)
+        step = max_step * (2 * self.generator.random() - 1) #* self.bestEnergy/(self.currentEnergy+self.bestEnergy)
+
+        new_position = self.state[index] + step * np.array([np.cos(angle), np.sin(angle)])
+        if np.linalg.norm(new_position) >= RADIUS:
+            self.state[index] = new_position/np.linalg.norm(new_position)
+        else:
+            self.state[index] = new_position
+
+
 def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int, 
                        cooling_scheme: Generator[float, None, None], max_step: float, 
                        save_path: str = None) -> Tuple[Coulomb, np.ndarray[float]]:
@@ -118,7 +139,7 @@ def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int,
             index = system.generator.integers(system.state.shape[0])
 
             old_state = system.state[index].copy()
-            system.moveParticle(index, max_step)
+            system.forceMoveParticle(index, max_step)
             system.currentEnergy = system.newEnergy
             system.newEnergy = system.stateEnergy()
 
