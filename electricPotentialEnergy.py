@@ -1,5 +1,7 @@
 import numpy as np
 import scipy as sp
+
+from time import time
 import scipy.spatial as spatial
 import matplotlib.pyplot as plt
 
@@ -26,6 +28,23 @@ class Coulomb:
 
             self.state[i, :] = dist * np.cos(angle), dist * np.sin(angle)
     
+    
+    """
+    def stateEnergy(self):
+        \"""
+        Calculates the energy of the current system state.
+        \"""
+        energySum = 0.0
+        for i in range(self.state.shape[0]):
+            for j in range(i + 1, self.state.shape[0]):
+                pyt  = np.square(self.state[i,:] - self.state[j,:])
+                E_ij = np.divide(1, np.sqrt(np.sum(pyt)))
+
+                energySum += 2 * E_ij
+        self.totalEnergy = energySum
+        return energySum
+    """
+        
     """
     def stateEnergy(self):
         \"""
@@ -45,6 +64,8 @@ class Coulomb:
     def stateEnergy(self):
         """
         Calculates the energy of the current system state.
+
+        Optimized for speed (old method took 5.3 seconds for 1000 particles, current takes 0.06)
         """
         distance = spatial.distance_matrix(self.state, self.state)
         np.fill_diagonal(distance, 1) # The diagonals are all 0, which would result in inf when divided
@@ -64,47 +85,67 @@ class Coulomb:
         else:
             self.state[index] = new_position
 
-def simulatedAnnealing(system: Coulomb, max_iters: int, initial_temp: float, cooling_rate: float, max_step: float, save_path: str = None) -> Coulomb:
+def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int, 
+                       cooling_scheme: Generator[float, None, None], max_step: float, 
+                       save_path: str = None) -> Tuple[Coulomb, np.ndarray[float]]:
     """
     Simulated Annealing to find the minimal energy configuration.
     Optionally logs system states to a NumPy .npy file.
+
+    Args:
+        system: Coulomb object representing system of classically charged particles in a round box.
+        chain_length: Length of the markov chain, representing the amount of particle moves at the
+                      same temperature.
+        max_iters: Maximum amount of iters before the calculation is deemed too expensive.
+        cooling scheme: Generator instance that represents the cooling scheme in between markov chain steps.
+
     """
-    temp = initial_temp
+    temp = next(cooling_scheme)
     best_state = system.state.copy()
     best_energy = system.stateEnergy()
-    energy = np.array(np.zeros(max_iters))
+
+    energy = np.zeros(max_iters)
     system.newEnergy = best_energy
+    
+    step = 0
+    converged = False
 
     states_log = []
 
-    for step in range(max_iters):
-        index = system.generator.integers(system.state.shape[0])
+    # Modified to work with markov chain length
+    while not converged and (step < max_iters or step == None):
+        for subStep in range(chain_length):
+            index = system.generator.integers(system.state.shape[0])
 
-        old_state = system.state[index].copy()
-        system.moveParticle(index, max_step)
-        system.currentEnergy = system.newEnergy
-        system.newEnergy = system.stateEnergy()
+            old_state = system.state[index].copy()
+            system.moveParticle(index, max_step)
+            system.currentEnergy = system.newEnergy
+            system.newEnergy = system.stateEnergy()
 
-        energy[step] = system.currentEnergy
-        if system.newEnergy > system.currentEnergy:
-            acceptance_prob = np.exp(-(system.newEnergy - system.currentEnergy) / temp)
-            if system.generator.random() > acceptance_prob:
-                system.state[index] = old_state
-            else:
-                system.newEnergy = system.currentEnergy
+            energy[step] = system.currentEnergy
+            if system.newEnergy > system.currentEnergy:
+                acceptance_prob = np.exp(-(system.newEnergy - system.currentEnergy) / temp)
+                if system.generator.random() > acceptance_prob:
+                    system.state[index] = old_state
+                else:
+                    system.newEnergy = system.currentEnergy
 
-        if system.newEnergy < system.bestEnergy:
-            system.bestEnergy = system.newEnergy
-            best_state = system.state.copy()
-        
-        if save_path is not None:
-            states_log.append(system.state.copy())
+            if system.newEnergy < system.bestEnergy:
+                system.bestEnergy = system.newEnergy
+                best_state = system.state.copy()
+            
+            if save_path is not None:
+                states_log.append(system.state.copy())
 
-        temp *= cooling_rate
+            step += 1
+            if not (step < max_iters or step == None): break
+
+        temp = next(cooling_scheme)
     
     if save_path is not None:
         np.save(save_path, states_log)
 
+        temp = next(cooling_scheme)
     system.state = best_state
 
     return system, energy
@@ -194,7 +235,9 @@ def arithmeticGeometric(T_init, a, b):
         yield T
 
 if __name__ == "__main__":
-    system = Coulomb(10)
-    fig, ax = plotState(system)
+    system = Coulomb(1000)
+    fig, ax = plotState(system.state)
+    tStart = time()
     print(system.stateEnergy())
+    print(f"time: {time() - tStart}")
     plt.show()
