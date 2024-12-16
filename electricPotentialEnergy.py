@@ -78,7 +78,7 @@ def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int,
                        save_path: str = None) -> Tuple[Coulomb, np.ndarray[float]]:
     """
     Simulated Annealing to find the minimal energy configuration.
-    Optionally logs system states to a NumPy .npy file.
+    Optionally logs system states and energies to a NumPy .npy files.
 
     Args:
         system: Coulomb object representing system of classically charged particles in a round box.
@@ -92,13 +92,12 @@ def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int,
     best_state = system.state.copy()
     best_energy = system.stateEnergy()
 
+    log_dict = {"states": [], "energies": []}
     energy = np.zeros(max_iters)
     system.newEnergy = best_energy
     
     step = 0
     converged = False
-
-    states_log = []
 
     # Modified to work with markov chain length
     while not converged and (step < max_iters or step == None):
@@ -123,7 +122,8 @@ def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int,
                 best_state = system.state.copy()
             
             if save_path is not None:
-                states_log.append(system.state.copy())
+                log_dict["states"].append(system.state.copy())
+                log_dict["energies"].append(energy[step])
 
             step += 1
             if not (step < max_iters or step == None): break
@@ -131,9 +131,9 @@ def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int,
         temp = next(cooling_scheme)
     
     if save_path is not None:
-        np.save(save_path, states_log)
+        np.save(f"{save_path}_states.npy", np.array(log_dict["states"]))
+        np.save(f"{save_path}_energies.npy", np.array(log_dict["energies"]))
 
-        temp = next(cooling_scheme)
     system.state = best_state
 
     return system, energy
@@ -153,10 +153,6 @@ def plotState(state: np.ndarray, animation: bool = False, ax: plt.Axes = None) -
     circle = plt.Circle((0,0), RADIUS, color="black", fill=False)
     ax.add_patch(circle)
     ax.scatter(state[:,0], state[:,1])
-    # ax.set_xlim([-RADIUS, RADIUS])
-    # ax.set_ylim([-RADIUS, RADIUS])
-    # ax.set_aspect("equal")
-    # ax.axis("off")
 
     if animation is False:
         return fig, ax
