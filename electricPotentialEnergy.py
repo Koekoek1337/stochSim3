@@ -102,20 +102,26 @@ def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int,
     # Modified to work with markov chain length
     while not converged and (step < max_iters or step == None):
         for subStep in range(chain_length):
-            index = system.generator.integers(system.state.shape[0])
 
+            index = system.generator.integers(system.state.shape[0])
             old_state = system.state[index].copy()
+
             system.forceMoveParticle(index, max_step)
-            system.currentEnergy = system.newEnergy
             system.newEnergy = system.stateEnergy()
 
-            energy[step] = system.currentEnergy
-            if system.newEnergy > system.currentEnergy:
-                acceptance_prob = np.exp(-(system.newEnergy - system.currentEnergy) / temp)
+            energy_difference = system.newEnergy - system.currentEnergy
+
+            if energy_difference > 0:
+                acceptance_prob = np.exp(-(energy_difference) / temp)
                 if system.generator.random() > acceptance_prob:
                     system.state[index] = old_state
-                else:
                     system.newEnergy = system.currentEnergy
+                else:
+                    system.currentEnergy = system.newEnergy
+            else:
+                system.currentEnergy = system.newEnergy
+            
+            energy[step] = system.currentEnergy
 
             if system.newEnergy < system.bestEnergy:
                 system.bestEnergy = system.newEnergy
