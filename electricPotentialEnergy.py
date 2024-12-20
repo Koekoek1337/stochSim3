@@ -53,6 +53,9 @@ class Coulomb:
             self.state[index] = new_position
 
     def forceMoveParticle(self, index, max_step):
+        """
+        Moves a single particle based on force and ensures it stays within the circle.
+        """
         forceComp = self.state[:,:] - self.state[index, :]
         dists = spatial.distance_matrix(self.state[index:index+1, :], self.state)
         dists = dists[0,:]
