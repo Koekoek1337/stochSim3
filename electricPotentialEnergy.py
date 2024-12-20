@@ -57,7 +57,7 @@ class Coulomb:
         dists = spatial.distance_matrix(self.state[index:index+1, :], self.state)
         dists = dists[0,:]
         dists[index] = 1
-        forces = np.divide(1, dists)
+        forces = np.divide(1, np.power(dists,3))
         forceComp = forceComp * np.asarray([forces, forces]).transpose()
         fx, fy = np.sum(forceComp[:,0]), np.sum(forceComp[:,1])
 
@@ -75,7 +75,7 @@ class Coulomb:
 
 def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int, 
                        cooling_scheme: Generator[float, None, None], max_step: float, 
-                       save_path: str = None, prerun = 0) -> Tuple[Coulomb, np.ndarray[float]]:
+                       save_path: str = None, prerun = 0, move_strategy: str = 'random') -> Tuple[Coulomb, np.ndarray[float]]:
     """
     Simulated Annealing to find the minimal energy configuration.
     Optionally logs system states and energies to a NumPy .npy files.
@@ -109,8 +109,10 @@ def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int,
 
             index = system.generator.integers(system.state.shape[0])
             old_state = system.state[index].copy()
-
-            system.moveParticle(index, max_step)
+            if move_strategy == 'random':
+                system.moveParticle(index, max_step)
+            else:
+                system.forceMoveParticle(index, max_step)
             system.newEnergy = system.stateEnergy()
 
             energy_difference = system.newEnergy - system.currentEnergy
