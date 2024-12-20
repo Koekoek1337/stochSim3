@@ -75,7 +75,7 @@ class Coulomb:
 
 def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int, 
                        cooling_scheme: Generator[float, None, None], max_step: float, 
-                       save_path: str = None) -> Tuple[Coulomb, np.ndarray[float]]:
+                       save_path: str = None, prerun = 0) -> Tuple[Coulomb, np.ndarray[float]]:
     """
     Simulated Annealing to find the minimal energy configuration.
     Optionally logs system states and energies to a NumPy .npy files.
@@ -99,6 +99,10 @@ def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int,
     step = 0
     converged = False
 
+    if prerun:
+        nullScheme = linearCooling(0,0)
+        system, _  = simulatedAnnealing(system, 1, max_iters, nullScheme, max_step)
+
     # Modified to work with markov chain length
     while not converged and (step < max_iters or step == None):
         for subStep in range(chain_length):
@@ -106,7 +110,7 @@ def simulatedAnnealing(system: Coulomb, chain_length: int, max_iters: int,
             index = system.generator.integers(system.state.shape[0])
             old_state = system.state[index].copy()
 
-            system.forceMoveParticle(index, max_step)
+            system.moveParticle(index, max_step)
             system.newEnergy = system.stateEnergy()
 
             energy_difference = system.newEnergy - system.currentEnergy
@@ -178,11 +182,12 @@ def linearCooling(T_Init, dT) -> Generator[float, None, None]:
     yield T_Init
 
     T = T_Init - dT
-    while T_Init > 0:
+    while T > 0:
         yield T
         T -= dT
     
-    yield 0
+    while True:
+        yield 0
 
 
 def geometricCooling(T_Init, alpha) -> Generator[float, None, None]:
