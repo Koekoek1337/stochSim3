@@ -9,7 +9,7 @@ from typing import List, Tuple
 
 SEED     = 42
 MAX_SEED = 9999999999
-N_ITER = 10000
+N_ITER   = 10000
 N_PRERUN = 3000
 
 def processData(bestEns: List[np.ndarray[float]]) -> Tuple[np.ndarray[float], np.ndarray[float]]:
@@ -25,10 +25,8 @@ def processData(bestEns: List[np.ndarray[float]]) -> Tuple[np.ndarray[float], np
 
 def axLayout(ax: plt.Axes, nParts, nullEn = None):
     NPART_RANGES = {
-                    5:  (13.5, 14.5),
-                    10: (75, 80),
-                    20: (385, 395),
-                    50: (2900, 2950)
+                    20: (386, 390),
+                    50: (2910, 2930)
                     }
 
     if nullEn:
@@ -37,10 +35,7 @@ def axLayout(ax: plt.Axes, nParts, nullEn = None):
     ax.legend()
     ax.set_xlabel("Iteration")
     ax.set_ylabel("Mean Best Energy")
-    # ax.set_yscale("log")
-    # ax.set_xscale("log")
     ax.set_ybound(*NPART_RANGES[nParts])
-
 
 
 """
@@ -183,7 +178,7 @@ def geoCoolingConvergenceT(nParts, tempRange, alpha, nIter = 20000, nSample = 10
         ax.fill_between(list(range(len(mean))), mean - std, mean + std, alpha=0.2)
         ax.plot(mean, label=f"{unit} = {temp:.2e}")
 
-    ax.set_title("Arithmetic Geometric Cooling scheme with $\\alpha$ = " + f"{alpha} in {nParts} particle system\n" + f"For varying values {unit}")
+    ax.set_title("Arithmetic Geometric Cooling scheme with $\\alpha$ = " + f"{alpha} in {nParts} particle system for varying values {unit}")
     axLayout(ax, nParts, nullEn)
 
     if save: fig.savefig(f"./schemeCon/GeomVarT_A={alpha}_{nParts}parts.png", dpi=1200)
@@ -251,7 +246,7 @@ def arithCoolingConvergenceB(nParts, bRange, temp, alpha, nIter = 20000, nSample
         ax.fill_between(list(range(len(mean))), mean - std, mean + std, alpha=0.2)
         ax.plot(mean, label=f"{unit} = {b:.4f}")
     
-    ax.set_title("Arithmetic Geometric Cooling scheme with $T_{init}$ = " + f"{temp} and a = {alpha} \n" + f"in {nParts} particle system\n" + f"For varying values {unit}")
+    ax.set_title("Arithmetic Geometric Cooling scheme with $T_{init}$ = " + f"{temp} and a = {alpha} \n" + f"in {nParts} particle system for varying values {unit}")
     axLayout(ax, nParts, nullEn)
 
     if save: fig.savefig(f"./schemeCon/arithVarb_T={temp}_A={alpha}_{nParts}parts.png", dpi=1200)
@@ -327,7 +322,8 @@ def arithCoolingConvergenceA(nParts, alphaRange, temp, b, nIter = 20000, nSample
 
 
 if __name__== "__main__":
-    particles = [5,10,20,50]
+    particles = [20]
+    iters     = [20000]
 
     print("Running NullStrat")
     nullRuns = []
@@ -336,75 +332,49 @@ if __name__== "__main__":
         _, _, en = linConvergeLinCoeff(nPart,  [1], 0, 30000, nSample=10, save=True)
         nullRuns.append(np.min(en))
     plt.close()
-
+    
     print("Running log")
     for i, nPart in enumerate(particles):
         print(nPart)
-        logCoolingConvergence(nPart , np.linspace(1, 100, 5), nSample=10, save=True, nullEn=nullRuns[i])
+        logCoolingConvergence(nPart , np.linspace(0.1, 10, 5), iters[i] ,nSample=10, save=True, nullEn=nullRuns[i])
     plt.close()
-
+    
     print("Running geo T")
     for i, nPart in enumerate(particles):
         print(nPart)
-        if i < 2:
-            nIter = 8000
-        elif i == 3:
-            nIter == 50000
-        else:
-            nIter = 20000
-        geoCoolingConvergenceT(nPart,  np.linspace(1000, 1e4, 5), 0.99, nIter=nIter, nSample=10,  save=True, nullEn=nullRuns[i])
+        geoCoolingConvergenceT(nPart,  np.linspace(1000, 1e4, 5), 0.967, iters[i], nSample=10,  save=True, nullEn=nullRuns[i])
     plt.close()
 
     print("Running geo A")
     for i, nPart in enumerate(particles):
         print(nPart)
-        if i < 2:
-            nIter = 8000
-        elif i == 3:
-            nIter == 50000
-        else:
-            nIter = 20000
-        geoCoolingConvergenceA(nPart,  np.linspace(0.9, 0.99, 5), 5.5e3, nIter=nIter,  nSample=10, save=True, nullEn=nullRuns[i])
+        geoCoolingConvergenceA(nPart,  np.linspace(0.9, 0.99, 5), 5.5e3, iters[i],  nSample=10, save=True, nullEn=nullRuns[i])
     plt.close()
 
     print("Running Lin LC")
     for i, nPart in enumerate(particles):
         print(nPart)
-        if i < 2:
-            nIter = 8000
-        else:
-            nIter = 20000
-        linConvergeLinCoeff(nPart,  np.linspace(-1, -100, 5), 1000, nIter=nIter,  nSample=10,  save=True, nullEn=nullRuns[i])
+        linConvergeLinCoeff(nPart,  np.linspace(-1e-4, -1e-2, 5), 5, iters[i],  nSample=10,  save=True, nullEn=nullRuns[i])
     plt.close()
 
     print("Running Lin T")
     for i, nPart in enumerate(particles):
         print(nPart)
-        if i < 2:
-            nIter = 8000
-        else:
-            nIter = 20000
-        linConvergeTemp(nPart , np.linspace(1e1, 1e4, 5), -50, nIter=nIter,  nSample=10,  save=True, nullEn=nullRuns[i])
+        linConvergeTemp(nPart , np.linspace(1, 10, 5), -0.05, iters[i],  nSample=10,  save=True, nullEn=nullRuns[i])
     plt.close()
-
-    print("Runnin Arith B")
+    
+    """
+      print("Runnin Arith B")
     for i, nPart in enumerate(particles):
         print(nPart)
-        if i < 2:
-            nIter = 8000
-        else:
-            nIter = 20000
-        figArithB0, ax, en = arithCoolingConvergenceB(nPart , np.linspace(1e-5, 1e-3, 5), 5.5e3, 0.99, nIter=nIter,  nSample=10,  save=True, nullEn=nullRuns[i])
+        figArithB0, ax, en = arithCoolingConvergenceB(nPart , np.linspace(-10, 10, 5), 5.5e3, 0.967,  iters[i],  nSample=10,  save=True, nullEn=nullRuns[i])
     plt.close()
 
     print("Running Arith A")
     for i, nPart in enumerate(particles):
         print(nPart)
-        if i < 2:
-            nIter = 8000
-        else:
-            nIter = 20000
-        arithCoolingConvergenceT(nPart,  np.linspace(1000, 1e4, 5), 0.99, 5.5e3, nIter=nIter,  nSample=10, save=True, nullEn=nullRuns[i])
+        arithCoolingConvergenceT(nPart,  np.linspace(1000, 1e4, 5), 0.967, 0.1,  iters[i],  nSample=10, save=True, nullEn=nullRuns[i])
     plt.close()
 
     
+    """
